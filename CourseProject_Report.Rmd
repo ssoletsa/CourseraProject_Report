@@ -1,0 +1,66 @@
+---
+title: 'Coursera: Learn Practical Machine Learning Lab Sandbox'
+author: "Nisa Nuraulia"
+date: "2/13/2025"
+output: html_document
+---
+
+# Introduction
+This project aims to predict how participants performed barbell lifts using sensor data from their **belt, forearm, arm, and dumbbell**.  
+We will use **Machine Learning** to classify the exercises into five categories (**A, B, C, D, E**) based on the `classe` variable.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(rstudioapi)
+library(caret)
+library(randomForest)
+```
+
+```{r load-data}
+# Load datasets
+training_data <- read.csv("pml-training.csv", na.strings = c("NA", "", "#DIV/0!"))
+test_data <- read.csv("pml-testing.csv", na.strings = c("NA", "", "#DIV/0!"))
+
+# View structure of training data
+str(training_data)
+```
+
+```{r clean-data}
+# Clean dataset: Remove columns with NA values and unnecessary columns
+training_data <- training_data[, colSums(is.na(training_data)) == 0]
+training_data <- training_data[, -(1:7)]
+training_data$classe <- as.factor(training_data$classe)
+```
+
+```{r data-splitting}
+# Split data into training and validation sets
+set.seed(123)
+inTrain <- createDataPartition(training_data$classe, p = 0.7, list = FALSE)
+train_set <- training_data[inTrain, ]
+validation_set <- training_data[-inTrain, ]
+
+# Check dimensions of training and validation sets
+dim(train_set)
+dim(validation_set)
+```
+
+```{r model-training}
+# Train Random Forest model
+set.seed(123)
+rf_model <- randomForest(classe ~ ., data = train_set, importance = TRUE)
+```
+
+```{r model-evaluation}
+# Make predictions on validation set
+rf_predictions <- predict(rf_model, validation_set)
+
+# Evaluate model performance
+conf_matrix <- confusionMatrix(rf_predictions, validation_set$classe)
+conf_matrix
+```
+
+```{r final-predictions}
+# Make final predictions on test data
+final_predictions <- predict(rf_model, test_data)
+answers <- data.frame(problem_id = 1:length(final_predictions), classe = final_predictions)
+answers
